@@ -1,0 +1,20 @@
+/** Release gate for the actual one-file Pages distribution; no private fixtures. */
+const fs=require('fs'),path=require('path'),assert=require('assert'),crypto=require('crypto'),vm=require('vm');
+const root=path.resolve(__dirname,'..');
+const single=path.join(root,'offline','AI_Quality_Lab_V0.6.1_离线单文件演示.html');
+let tests=[];const test=(name,fn)=>{fn();tests.push(name);console.log('PASS',name)};
+let html='';
+test('可部署的单文件 HTML 存在',()=>{html=fs.readFileSync(single,'utf8');assert(html.length>150_000);});
+test('版本和中文页面标题正确',()=>assert(html.includes('<title>AI Quality Lab · V0.6.1</title>')));
+test('全部关键工作区入口保留',()=>['总览面板','测试用例','执行记录','Bad Case','图片证据','复测记录','人工评测','报告中心','数据管理'].forEach(x=>assert(html.includes(x),x)));
+test('源码引用没有外部静态资源',()=>assert(!/<script[^>]+src=|<link[^>]+href=/.test(html)));
+test('内联的三个 JS 块语法正确',()=>{const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];assert.equal(scripts.length,3);scripts.forEach((x,i)=>new vm.Script(x[1],{filename:'inline-'+i+'.js'}));});
+test('未引用 CDN 或模型 API 服务',()=>assert(!/<script[^>]+src=|fetch\(['"]https?:|\bXMLHttpRequest\b/.test(html)));
+test('移动端完整导航与版本标识已打包',()=>{assert(html.includes('grid-template-columns:repeat(3,minmax(0,1fr))'));assert(html.includes('V0.6.1'));});
+test('打印报告含隐私声明且未被隐藏',()=>{assert(html.includes('AI Quality Lab V0.6.1'));assert(html.includes('.endnote{display:block!important'));assert(html.includes('.case-intro{break-inside:avoid-page'))});
+test('单文件构建不包含用户私人联系信息',()=>{assert(!html.includes('yuguanganuse@gmail.com'));assert(!html.includes('15813041035'));});
+test('运行时版权声明保留',()=>{assert(html.includes('React v16.0.0'));assert(html.includes('React v16.0.1'));});
+test('公开 HTML 不嵌入用户真实备份',()=>{assert(!html.includes('AIQL-BACKUP-0.5","exportedAt"'));assert(!html.includes('fileName":"正文配图_05_第二阶段'))});
+const buf=fs.readFileSync(single);const manifest={release:'V0.6.1 / product-polish',sha256:crypto.createHash('sha256').update(buf).digest('hex'),bytes:buf.length,checks:tests};
+fs.writeFileSync(path.join(root,'RELEASE_MANIFEST_V0.6.1.json'),JSON.stringify(manifest,null,2));
+console.log(`${tests.length} release checks passed; SHA-256=${manifest.sha256}`);

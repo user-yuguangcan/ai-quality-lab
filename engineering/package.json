@@ -1,0 +1,27 @@
+{
+  "name": "ai-quality-lab",
+  "private": true,
+  "version": "0.6.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build --base=./",
+    "preview": "vite preview --host 0.0.0.0",
+    "test:domain": "node scripts/domain-tests.cjs",
+    "test:logic": "node scripts/compile-tests.cjs && node scripts/domain-tests.cjs && node scripts/stage03-tests.cjs && node scripts/stage04-tests.cjs",
+    "test:release": "npm run prepare:offline && node scripts/stage04c-preflight.cjs && node scripts/verify-deploy.cjs",
+    "prepare:offline": "node scripts/build-offline.cjs && node scripts/package-single.cjs",
+    "verify:published": "node scripts/verify-deploy.cjs --repo-root-index",
+    "test:types:offline": "tsc -p tsconfig.offline-check.json"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "vite": "6.3.5",
+    "@types/react": "18.3.0",
+    "@types/react-dom": "18.3.0"
+  }
+}
