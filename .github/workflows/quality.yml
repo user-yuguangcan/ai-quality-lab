@@ -1,0 +1,42 @@
+
+name: AI Quality Lab - React 18 source CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engineering
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies (direct versions pinned)
+        run: npm install --no-audit --no-fund
+      - name: React 18 + TypeScript type-check and Vite production build
+        run: npm run build
+      - name: Domain, scoring and reporting tests
+        run: npm run test:logic
+      - name: Regenerate and validate published single-file edition
+        run: npm run test:release
+      - name: Check live Pages index remains the tested release
+        run: npm run verify:published
+      - name: Upload inspectable Vite production build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiql-v061-react18-vite-dist
+          path: engineering/dist/
+          if-no-files-found: error
